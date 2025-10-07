@@ -101,7 +101,7 @@ const Hero = () => {
       description:
         "Created a personal portfolio showcasing smooth animations, 3D effects, and seamless navigation.",
       technologies: ["React", "Next.js", "Vite", "Tailwind", "Bootstrap", "Three.js", "Framer Motion"],
-      github: "https://github.com/yourusername/portfolio"
+      github: "https://github.com/milonee-11/Portfolio/tree/master"
     }
   ];
 
