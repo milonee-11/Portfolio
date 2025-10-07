@@ -3,40 +3,46 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [theme, setTheme] = useState("dark");
   const [activeSection, setActiveSection] = useState("Home");
+  const [isDarkTheme, setIsDarkTheme] = useState(true);
 
   const navLinks = ["Home", "About", "Skills", "Projects", "Contact", "Education"];
 
-  // Theme sync with system and localStorage
+  // Theme sync with system
   useEffect(() => {
-    // Check localStorage for saved theme or use system preference
-    const savedTheme = localStorage.getItem("theme");
-    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     
-    const initialTheme = savedTheme || systemTheme;
-    setTheme(initialTheme);
-    
-    // Apply theme to document
-    if (initialTheme === "light") {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
-  }, []);
+    const updateTheme = () => {
+      const systemIsDark = mediaQuery.matches;
+      setIsDarkTheme(systemIsDark);
+      
+      // Apply theme to document
+      if (systemIsDark) {
+        document.documentElement.classList.remove("light");
+      } else {
+        document.documentElement.classList.add("light");
+      }
+    };
 
-  // Update theme when it changes
-  useEffect(() => {
-    // Save theme preference
-    localStorage.setItem("theme", theme);
+    // Set initial theme
+    updateTheme();
     
-    // Apply theme to document
-    if (theme === "light") {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
-  }, [theme]);
+    // Listen for theme changes
+    const handleThemeChange = (e: MediaQueryListEvent) => {
+      setIsDarkTheme(e.matches);
+      if (e.matches) {
+        document.documentElement.classList.remove("light");
+      } else {
+        document.documentElement.classList.add("light");
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleThemeChange);
+    
+    return () => {
+      mediaQuery.removeEventListener("change", handleThemeChange);
+    };
+  }, []);
 
   // Scroll spy for active section
   useEffect(() => {
@@ -65,13 +71,49 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Function to open Gmail compose window
+  // Function to open email client (works on both mobile and desktop)
   const handleHireMeClick = () => {
     const email = "miloneep@gmail.com";
     const subject = "Job Opportunity";
     const body = "Hello Milonee,\n\nI would like to discuss a potential opportunity with you.";
     
-    window.open(`https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${email}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, "_blank");
+    // Check if it's a mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // For mobile devices, use mailto link
+      window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    } else {
+      // For desktop, use Gmail web interface
+      window.open(`https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${email}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, "_blank");
+    }
+  };
+
+  // Theme-based background colors
+  const getNavbarBackground = () => {
+    return isDarkTheme 
+      ? "bg-gray-900/90 backdrop-blur-sm" 
+      : "bg-white/90 backdrop-blur-sm";
+  };
+
+  const getMobileNavBackground = () => {
+    return isDarkTheme 
+      ? "bg-gray-900/95 backdrop-blur-sm" 
+      : "bg-white/95 backdrop-blur-sm";
+  };
+
+  // Theme-based text colors
+  const getTextColor = (type: 'default' | 'hover' | 'active' = 'default') => {
+    if (type === 'default') {
+      return isDarkTheme ? "text-gray-200" : "text-gray-700";
+    }
+    if (type === 'hover') {
+      return "hover:text-cyan-400";
+    }
+    if (type === 'active') {
+      return "text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500";
+    }
+    return "";
   };
 
   return (
@@ -80,15 +122,13 @@ const Navbar = () => {
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="fixed top-0 left-0 w-full z-50 shadow-lg 
-                   bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm
-                   light:bg-white/90 dark:bg-gray-900/90"
+        className={`fixed top-0 left-0 w-full z-50 shadow-lg ${getNavbarBackground()}`}
       >
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative">
           {/* Mobile Menu Button - Left */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-gray-700 dark:text-gray-200 focus:outline-none z-10"
+            className={`md:hidden focus:outline-none z-10 ${getTextColor()}`}
             aria-label="Toggle menu"
           >
             <svg
@@ -144,8 +184,8 @@ const Navbar = () => {
                   href={`#${link.toLowerCase()}`}
                   className={`transition duration-300 ${
                     activeSection === link
-                      ? "text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500"
-                      : "text-gray-700 dark:text-gray-200 hover:text-cyan-400"
+                      ? getTextColor('active')
+                      : `${getTextColor()} ${getTextColor('hover')}`
                   }`}
                 >
                   {link}
@@ -190,16 +230,15 @@ const Navbar = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="md:hidden px-6 py-4 space-y-4 font-medium 
-                         bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm mt-4"
+              className={`md:hidden px-6 py-4 space-y-4 font-medium ${getMobileNavBackground()} mt-4`}
             >
               {navLinks.map((link, idx) => (
                 <li
                   key={idx}
                   className={`cursor-pointer transition duration-300 ${
                     activeSection === link
-                      ? "text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500"
-                      : "text-gray-700 dark:text-gray-200 hover:text-cyan-400"
+                      ? getTextColor('active')
+                      : `${getTextColor()} ${getTextColor('hover')}`
                   }`}
                   onClick={() => setIsOpen(false)}
                 >
@@ -213,14 +252,15 @@ const Navbar = () => {
 
       {/* Add styles for the continuous border animation */}
       <style>{`
-          .hire-me-border{
+        .hire-me-border{
           background: linear-gradient(90deg, #22d3ee, #3b82f6, #8b5cf6, #3b82f6, #22d3ee);
           background-size: 300% 100%;
           animation: gradientMove 3s linear infinite;
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
-          mask-composite: exclude;}
+          mask-composite: exclude;
+        }
         
         @keyframes gradientMove {
           0% {
@@ -233,6 +273,11 @@ const Navbar = () => {
         
         .hire-me-btn:hover .hire-me-border {
           animation: gradientMove 1s linear infinite;
+        }
+
+        /* Theme transition for smooth color changes */
+        * {
+          transition: background-color 0.3s ease, color 0.3s ease;
         }
       `}
       </style>

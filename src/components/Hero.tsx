@@ -26,7 +26,21 @@ import pic from './profile.jpg';
 const Hero = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(true);
   const popupRef = useRef<HTMLDivElement>(null);
+
+  // Detect system theme
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkTheme(mediaQuery.matches);
+    
+    const handleThemeChange = (e: MediaQueryListEvent) => {
+      setIsDarkTheme(e.matches);
+    };
+    
+    mediaQuery.addEventListener('change', handleThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleThemeChange);
+  }, []);
 
   // Array of cubes with random positions for hero section
   const heroCubes = Array.from({ length: 10 }).map((_, i) => ({
@@ -100,7 +114,7 @@ const Hero = () => {
     
     for (let i = 0; i < 15; i++) {
       const cube = document.createElement('div');
-      cube.className = 'absolute w-3 h-3 bg-gradient-to-br from-cyan-400/10 to-purple-500/10 rotate-45';
+      cube.className = `absolute w-3 h-3 ${isDarkTheme ? 'bg-gradient-to-br from-cyan-400/20 to-purple-500/20' : 'bg-gradient-to-br from-cyan-600/30 to-purple-600/30'} rotate-45`;
       cube.style.left = `${Math.random() * 100}%`;
       cube.style.top = `${Math.random() * 100}%`;
       cube.style.animation = `fallingCube ${15 + Math.random() * 10}s linear infinite`;
@@ -116,7 +130,7 @@ const Hero = () => {
         }
       });
     };
-  }, []);
+  }, [isDarkTheme]);
 
   // Handle scroll to top button
   useEffect(() => {
@@ -167,11 +181,65 @@ const Hero = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Open email client with pre-filled data
+  // Open email client with pre-filled data (works on both mobile and desktop)
   const openEmailClient = () => {
     const subject = "Contact Inquiry";
     const body = "Hello Milonee,\n\nI'm interested in discussing potential opportunities with you.\n\nBest regards,\n[Your Name]";
-    window.open(`https://mail.google.com/mail/u/0/?view=cm&fs=1&to=miloneep@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+    
+    // Check if it's a mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // For mobile devices, use mailto link
+      window.location.href = `mailto:miloneep@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    } else {
+      // For desktop, use Gmail web interface
+      window.open(`https://mail.google.com/mail/u/0/?view=cm&fs=1&to=miloneep@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+    }
+  };
+
+  // Theme-based background classes
+  const getBackgroundClass = (section: string) => {
+    const baseClasses = "relative ";
+    if (section === 'hero') {
+      return baseClasses + (isDarkTheme 
+        ? "bg-gradient-to-r from-gray-900 via-gray-800 to-black" 
+        : "bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300");
+    }
+    if (section === 'about') {
+      return baseClasses + (isDarkTheme 
+        ? "bg-gradient-to-br from-gray-900 via-gray-800 to-black" 
+        : "bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300");
+    }
+    return baseClasses;
+  };
+
+  // Theme-based text colors
+  const getTextColor = (type: 'primary' | 'secondary' | 'accent' = 'primary') => {
+    if (type === 'primary') {
+      return isDarkTheme ? "text-white" : "text-gray-800";
+    }
+    if (type === 'secondary') {
+      return isDarkTheme ? "text-gray-300" : "text-gray-600";
+    }
+    if (type === 'accent') {
+      return isDarkTheme ? "text-gray-400" : "text-gray-500";
+    }
+    return "";
+  };
+
+  // Theme-based background colors for cards
+  const getCardBackground = () => {
+    return isDarkTheme 
+      ? "bg-gray-800/70 backdrop-blur-md" 
+      : "bg-white/80 backdrop-blur-md";
+  };
+
+  // Theme-based border colors
+  const getBorderColor = () => {
+    return isDarkTheme 
+      ? "border-gray-700/30" 
+      : "border-slate-300/50";
   };
 
   return (
@@ -179,16 +247,14 @@ const Hero = () => {
       {/* Hero Section */}
       <section
         id="home"
-        className="relative flex items-center justify-center h-screen 
-                   bg-gradient-to-r from-gray-900 via-gray-800 to-black
-                   dark:bg-gradient-to-r dark:from-gray-900 dark:via-gray-800 dark:to-black
-                   light:bg-gradient-to-r light:from-slate-100 light:via-slate-200 light:to-slate-300
-                   text-white dark:text-white light:text-gray-800 overflow-hidden"
+        className={`flex items-center justify-center h-screen 
+                   text-white overflow-hidden ${getBackgroundClass('hero')}`}
       >
         {/* Animated Blobs Background */}
         <motion.div
-          className="absolute w-72 h-72 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-full mix-blend-screen filter blur-3xl opacity-30
-                     dark:opacity-30 light:opacity-20"
+          className={`absolute w-72 h-72 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-full mix-blend-screen filter blur-3xl ${
+            isDarkTheme ? "opacity-30" : "opacity-20"
+          }`}
           animate={{
             x: [0, 100, -100, 0],
             y: [0, -50, 50, 0],
@@ -196,8 +262,9 @@ const Hero = () => {
           transition={{ repeat: Infinity, duration: 12, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute w-96 h-96 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-screen filter blur-3xl opacity-20
-                     dark:opacity-20 light:opacity-15"
+          className={`absolute w-96 h-96 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-screen filter blur-3xl ${
+            isDarkTheme ? "opacity-20" : "opacity-15"
+          }`}
           animate={{
             x: [0, -120, 120, 0],
             y: [0, 60, -60, 0],
@@ -209,8 +276,9 @@ const Hero = () => {
         {heroCubes.map((cube) => (
           <motion.div
             key={cube.id}
-            className="absolute bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 opacity-20
-                       dark:opacity-20 light:opacity-15"
+            className={`absolute bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 ${
+              isDarkTheme ? "opacity-20" : "opacity-15"
+            }`}
             style={{
               left: cube.left,
               width: cube.size,
@@ -237,14 +305,14 @@ const Hero = () => {
                        text-transparent bg-clip-text 
                        bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500"
           >
-            Hi, I'm <span className="text-white dark:text-white light:text-gray-800">Milonee Patel</span>
+            Hi, I'm <span className={getTextColor('primary')}>Milonee Patel</span>
           </motion.h1>
 
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.5 }}
-            className="mt-4 text-xl md:text-2xl font-medium text-gray-300 dark:text-gray-300 light:text-gray-600"
+            className={`mt-4 text-xl md:text-2xl font-medium ${getTextColor('secondary')}`}
           >
             Frontend Designer & Developer
           </motion.h2>
@@ -253,7 +321,7 @@ const Hero = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1 }}
-            className="mt-6 max-w-2xl mx-auto text-gray-400 dark:text-gray-400 light:text-gray-500 text-lg"
+            className={`mt-6 max-w-2xl mx-auto text-lg ${getTextColor('accent')}`}
           >
             Crafting modern, responsive, and immersive digital experiences.
           </motion.p>
@@ -282,16 +350,14 @@ const Hero = () => {
       {/* About Section */}
       <section 
         id="about"
-        className="relative flex flex-col items-center justify-center min-h-screen 
-                   bg-gradient-to-br from-gray-900 via-gray-800 to-black
-                   dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-black
-                   light:bg-gradient-to-br light:from-slate-100 light:via-slate-200 light:to-slate-300
-                   text-white dark:text-white light:text-gray-800 px-6 py-16 overflow-hidden"
+        className={`flex flex-col items-center justify-center min-h-screen 
+                   px-6 py-16 overflow-hidden ${getBackgroundClass('about')}`}
       >
         {/* Hero-style background for about section */}
         <motion.div
-          className="absolute w-72 h-72 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-full mix-blend-screen filter blur-3xl opacity-30
-                     dark:opacity-30 light:opacity-20"
+          className={`absolute w-72 h-72 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-full mix-blend-screen filter blur-3xl ${
+            isDarkTheme ? "opacity-30" : "opacity-20"
+          }`}
           animate={{
             x: [0, 100, -100, 0],
             y: [0, -50, 50, 0],
@@ -299,8 +365,9 @@ const Hero = () => {
           transition={{ repeat: Infinity, duration: 12, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute w-96 h-96 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-screen filter blur-3xl opacity-20
-                     dark:opacity-20 light:opacity-15"
+          className={`absolute w-96 h-96 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-screen filter blur-3xl ${
+            isDarkTheme ? "opacity-20" : "opacity-15"
+          }`}
           animate={{
             x: [0, -120, 120, 0],
             y: [0, 60, -60, 0],
@@ -325,6 +392,21 @@ const Hero = () => {
               100% {
                 transform: translateY(100vh) rotate(360deg);
                 opacity: 0;
+              }
+            }
+            
+            /* Mobile-specific skill animations */
+            @media (max-width: 768px) {
+              .skill-card-mobile {
+                transition: all 0.3s ease;
+              }
+              
+              .skill-card-mobile.in-view {
+                transform: scale(1.05);
+                box-shadow: 0 10px 25px rgba(6, 182, 212, 0.3);
+                background: ${isDarkTheme 
+                  ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(168, 85, 247, 0.2))' 
+                  : 'linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(168, 85, 247, 0.3))'};
               }
             }
           `}
@@ -514,16 +596,16 @@ const Hero = () => {
                 Frontend Designer & Developer
               </motion.h3>
               <motion.p 
-                className="text-gray-300 dark:text-gray-300 light:text-gray-600 text-lg leading-relaxed mb-4"
+                className={`text-lg leading-relaxed mb-4 ${getTextColor('secondary')}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
               >
-                I'm <span className="font-semibold text-white dark:text-white light:text-gray-800 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 px-1 rounded">Milonee Patel</span>, a passionate{" "}
+                I'm <span className={`font-semibold ${getTextColor('primary')} bg-gradient-to-r from-cyan-500/20 to-purple-500/20 px-1 rounded`}>Milonee Patel</span>, a passionate{" "}
                 <span className="text-cyan-400 font-medium">Frontend Designer & Developer</span> crafting modern, responsive, and immersive digital experiences.  
               </motion.p>
               <motion.p 
-                className="text-gray-300 dark:text-gray-300 light:text-gray-600 text-lg leading-relaxed mb-4"
+                className={`text-lg leading-relaxed mb-4 ${getTextColor('secondary')}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
@@ -532,7 +614,7 @@ const Hero = () => {
                 <span className="highlight-text">Sass, Canva, and Three.js</span> to elevate my design and 3D web capabilities.
               </motion.p>
               <motion.p 
-                className="text-gray-400 dark:text-gray-400 light:text-gray-500 text-md mb-6 border-l-4 border-teal-500 pl-4 py-2 italic"
+                className={`text-md mb-6 border-l-4 border-teal-500 pl-4 py-2 italic ${getTextColor('accent')}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.9 }}
@@ -544,7 +626,6 @@ const Hero = () => {
               {/* Education Button - Now links to Education page */}
               <Link to="/edu" >
                 <motion.button
-               
                   className="mt-8 w-full py-4 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-xl font-semibold text-white shadow-lg hover:shadow-cyan-500/30 transition-all duration-300 relative overflow-hidden group"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -552,7 +633,7 @@ const Hero = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1 }}
                 >
-                  <span className="relative z-10 flex items-center justify-center" id="">
+                  <span className="relative z-10 flex items-center justify-center">
                     <FaGraduationCap className="mr-2" />
                     View My Education
                   </span>
@@ -590,7 +671,7 @@ const Hero = () => {
                 {achievements.map((achievement, index) => (
                   <motion.div
                     key={index}
-                    className="flex items-center p-4 bg-gray-800/40 dark:bg-gray-800/40 light:bg-slate-200/60 rounded-lg border border-gray-700/30 dark:border-gray-700/30 light:border-slate-300/30 hover:bg-gray-700/40 transition-colors"
+                    className={`flex items-center p-4 rounded-lg border ${getBorderColor()} hover:bg-gray-700/40 transition-colors ${getCardBackground()}`}
                     whileHover={{ 
                       scale: 1.03,
                       boxShadow: "0 5px 15px rgba(0,0,0,0.2)"
@@ -604,7 +685,7 @@ const Hero = () => {
                     </div>
                     <div>
                       <p className="text-lg font-semibold text-cyan-400">{achievement.value}</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-400 light:text-gray-500">{achievement.label}</p>
+                      <p className={`text-sm ${getTextColor('accent')}`}>{achievement.label}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -623,11 +704,8 @@ const Hero = () => {
           >
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              {/* <div className="absolute -top-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
-              <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
-               */}
               {/* Grid pattern */}
-              <div className="absolute inset-0 opacity-10 bg-grid-white/30 bg-[size:50px_50px]"></div>
+              <div className={`absolute inset-0 opacity-10 bg-grid-${isDarkTheme ? 'white' : 'gray-800'}/30 bg-[size:50px_50px]`}></div>
             </div>
 
             <div className="text-center relative z-10">
@@ -676,13 +754,13 @@ const Hero = () => {
                       y: -8,
                       transition: { type: "spring", stiffness: 300, damping: 15 }
                     }}
-                    className="relative group"
+                    className="relative group skill-card-mobile"
                   >
                     {/* Hover effect background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-2xl blur-md group-hover:blur-xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
                     
                     {/* Main skill card */}
-                    <div className="relative flex flex-col items-center justify-center p-5 bg-gray-800/70 backdrop-blur-md rounded-2xl border border-gray-700/30 transition-all duration-500 group-hover:border-cyan-400/40 group-hover:bg-gray-800/90 skill-card overflow-hidden">
+                    <div className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border transition-all duration-500 group-hover:border-cyan-400/40 overflow-hidden skill-card-mobile ${getCardBackground()} ${getBorderColor()}`}>
                       
                       {/* Animated border on hover */}
                       <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
@@ -699,12 +777,12 @@ const Hero = () => {
                       </motion.div>
                       
                       {/* Skill name */}
-                      <span className="text-md font-medium text-gray-300 mb-3 transition-colors duration-500 group-hover:text-white z-10">
+                      <span className={`text-md font-medium mb-3 transition-colors duration-500 group-hover:text-white z-10 ${getTextColor('secondary')}`}>
                         {skill.name}
                       </span>
                       
                       {/* Progress bar container */}
-                      <div className="w-full bg-gray-700/70 rounded-full h-2.5 mt-2 overflow-hidden backdrop-blur-sm">
+                      <div className={`w-full rounded-full h-2.5 mt-2 overflow-hidden backdrop-blur-sm ${isDarkTheme ? 'bg-gray-700/70' : 'bg-gray-300/70'}`}>
                         {/* Animated progress bar */}
                         <motion.div 
                           className="h-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 relative overflow-hidden"
@@ -828,19 +906,23 @@ const Hero = () => {
                     scale: 1.03,
                     boxShadow: "0 10px 25px rgba(6, 182, 212, 0.2)"
                   }}
-                  className="bg-gray-800/50 dark:bg-gray-800/50 light:bg-slate-200/60 rounded-2xl backdrop-blur-sm border border-gray-700/30 dark:border-gray-700/30 light:border-slate-300/30 p-6 text-left relative group"
+                  className={`rounded-2xl backdrop-blur-sm border p-6 text-left relative group ${getCardBackground()} ${getBorderColor()}`}
                 >
                   <h4 className="text-xl font-semibold text-cyan-300 mb-3">{project.title}</h4>
-                  <p className="text-gray-300 dark:text-gray-300 light:text-gray-600 mb-2">{project.description}</p>
+                  <p className={`mb-2 ${getTextColor('secondary')}`}>{project.description}</p>
 
                   <div className="flex flex-wrap gap-2 mb-2">
                     {project.technologies.map((tech, techIndex) => (
                       <motion.span 
                         key={techIndex}
-                        className="px-3 py-1 bg-cyan-900/30 dark:bg-cyan-900/30 light:bg-cyan-200 text-cyan-300 dark:text-cyan-300 light:text-cyan-700 rounded-full text-sm cursor-default relative overflow-hidden border border-cyan-500/20"
+                        className={`px-3 py-1 rounded-full text-sm cursor-default relative overflow-hidden border ${
+                          isDarkTheme 
+                            ? 'bg-cyan-900/30 text-cyan-300 border-cyan-500/20' 
+                            : 'bg-cyan-200 text-cyan-700 border-cyan-500/30'
+                        }`}
                         whileHover={{ 
                           scale: 1.08,
-                          backgroundColor: "rgba(8, 145, 178, 0.5)",
+                          backgroundColor: isDarkTheme ? "rgba(8, 145, 178, 0.5)" : "rgba(6, 182, 212, 0.3)",
                           boxShadow: "0 0 15px rgba(6, 182, 212, 0.4)"
                         }}
                         transition={{ duration: 0.3 }}
@@ -946,7 +1028,7 @@ const Hero = () => {
                       href={project.github || "#"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-300 hover:text-cyan-400 transition-colors text-2xl"
+                      className={`text-2xl transition-colors ${getTextColor('secondary')} hover:text-cyan-400`}
                       title="View on GitHub"
                       whileHover={{ scale: 1.2, rotate: 5 }}
                       whileTap={{ scale: 0.9 }}
@@ -984,14 +1066,14 @@ const Hero = () => {
          {/* Contact Section */}
         <motion.section
           id="contact"
-          
-          className="relative flex flex-col items-center justify-center min-h-screen 
-                      light:text-gray-800 px-6 py-16 overflow-hidden section-3d mt-0"
-         
+          className={`relative flex flex-col items-center justify-center min-h-screen 
+                      px-6 py-16 overflow-hidden section-3d mt-0 ${getBackgroundClass('about')}`}
         >
           {/* Background Effects */}
           <motion.div
-            className="absolute w-96 h-96 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-screen filter blur-3xl opacity-15 floating-3d"
+            className={`absolute w-96 h-96 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mix-blend-screen filter blur-3xl ${
+              isDarkTheme ? "opacity-15" : "opacity-10"
+            } floating-3d`}
             animate={{
               x: [0, -100, 100, 0],
               y: [0, 50, -50, 0],
@@ -1024,7 +1106,7 @@ const Hero = () => {
                 />
               </span>
             </h1>
-              <p className="text-xl text-gray-400 dark:text-gray-400 light:text-gray-600 max-w-2xl mx-auto depth-effect">
+              <p className={`text-xl max-w-2xl mx-auto depth-effect ${getTextColor('secondary')}`}>
                 Let's connect and discuss how we can bring your ideas to life!
               </p>
             </motion.div>
@@ -1041,32 +1123,28 @@ const Hero = () => {
                 <h3 className="text-2xl font-bold text-cyan-400 mb-6 depth-effect">Contact Information</h3>
                 
                 <motion.div
-                  className="flex items-center gap-4 p-4 bg-gray-800/30 dark:bg-gray-800/30 light:bg-slate-200/50 
-                             rounded-xl border border-gray-700/30 dark:border-gray-700/30 light:border-slate-300/30
-                             hover:border-cyan-500/50 transition-all duration-300 depth-effect-sm"
+                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 depth-effect-sm hover:border-cyan-500/50 ${getCardBackground()} ${getBorderColor()}`}
                   whileHover={{ x: 5, scale: 1.02 }}
                 >
                   <div className="p-3 bg-cyan-500/20 rounded-lg">
                     <FaEnvelope className="text-cyan-400 text-xl" />
                   </div>
                   <div>
-                    <p className="text-gray-400 dark:text-gray-400 light:text-gray-500 text-sm">Email</p>
-                    <p className="text-white dark:text-white light:text-gray-800 font-medium">miloneep@gmail.com</p>
+                    <p className={`text-sm ${getTextColor('accent')}`}>Email</p>
+                    <p className={`font-medium ${getTextColor('primary')}`}>miloneep@gmail.com</p>
                   </div>
                 </motion.div>
 
                 <motion.div
-                  className="flex items-center gap-4 p-4 bg-gray-800/30 dark:bg-gray-800/30 light:bg-slate-200/50 
-                             rounded-xl border border-gray-700/30 dark:border-gray-700/30 light:border-slate-300/30
-                             hover:border-purple-500/50 transition-all duration-300 depth-effect-sm"
+                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 depth-effect-sm hover:border-purple-500/50 ${getCardBackground()} ${getBorderColor()}`}
                   whileHover={{ x: 5, scale: 1.02 }}
                 >
                   <div className="p-3 bg-purple-500/20 rounded-lg">
                     <FaPhone className="text-purple-400 text-xl" />
                   </div>
                   <div>
-                    <p className="text-gray-400 dark:text-gray-400 light:text-gray-500 text-sm">Phone</p>
-                    <p className="text-white dark:text-white light:text-gray-800 font-medium">+919727781100</p>
+                    <p className={`text-sm ${getTextColor('accent')}`}>Phone</p>
+                    <p className={`font-medium ${getTextColor('primary')}`}>+919727781100</p>
                   </div>
                 </motion.div>
 
@@ -1082,17 +1160,18 @@ const Hero = () => {
               >
                 <motion.button
                   onClick={openEmailClient}
-                  className="w-full h-full min-h-[200px] bg-gradient-to-br from-cyan-500/10 to-purple-500/10 
-                             hover:from-cyan-500/20 hover:to-purple-500/20 rounded-2xl border-2 border-dashed 
-                             border-cyan-500/30 hover:border-cyan-500/50 transition-all duration-300 
-                             flex flex-col items-center justify-center gap-4 group depth-effect-lg"
+                  className={`w-full h-full min-h-[200px] rounded-2xl border-2 border-dashed 
+                             transition-all duration-300 flex flex-col items-center justify-center gap-4 group depth-effect-lg
+                             ${isDarkTheme 
+                               ? 'bg-gradient-to-br from-cyan-500/10 to-purple-500/10 hover:from-cyan-500/20 hover:to-purple-500/20 border-cyan-500/30 hover:border-cyan-500/50' 
+                               : 'bg-gradient-to-br from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border-cyan-500/40 hover:border-cyan-500/60'}`}
                   whileHover={{ scale: 1.02, y: -5 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <FaEnvelope className="text-cyan-400 text-4xl group-hover:text-cyan-300 transition-colors" />
                   <div className="text-center">
                     <h3 className="text-xl font-bold text-cyan-400 mb-2">Send me an Email</h3>
-                    <p className="text-gray-400 dark:text-gray-400 light:text-gray-600">
+                    <p className={getTextColor('secondary')}>
                       Click here to open your email client and get in touch!
                     </p>
                   </div>
@@ -1130,12 +1209,12 @@ const Hero = () => {
             <div className="h-1 w-20 bg-gradient-to-r from-teal-400 to-purple-500 mx-auto rounded-full mb-8"></div>
 
             <motion.div
-              className="bg-gray-800/50 dark:bg-gray-800/50 light:bg-slate-200/60 rounded-2xl backdrop-blur-sm border border-gray-700/30 dark:border-gray-700/30 light:border-slate-300/30 p-8 max-w-2xl mx-auto"
+              className={`rounded-2xl backdrop-blur-sm border p-8 max-w-2xl mx-auto ${getCardBackground()} ${getBorderColor()}`}
               whileHover={{ scale: 1.02 }}
             >
               <FaFilePdf className="text-cyan-400 text-5xl mx-auto mb-4" />
               <h4 className="text-xl font-semibold text-cyan-300 mb-2">Download My Resume</h4>
-              <p className="text-gray-300 dark:text-gray-300 light:text-gray-600 mb-6">
+              <p className={`mb-6 ${getTextColor('secondary')}`}>
                 📄Explore my skills and experience in this PDF.  <br></br>
                 I'm committed to giving my 100% while learning and contributing with you.
               </p>
@@ -1171,7 +1250,7 @@ const Hero = () => {
                 y: -5,
                 color: "#0A66C2"
               }}
-              className="text-3xl text-gray-400 dark:text-gray-400 light:text-gray-600 hover:text-cyan-400 transition-colors"
+              className={`text-3xl transition-colors ${getTextColor('secondary')} hover:text-cyan-400`}
             >
               <FaLinkedin />
             </motion.a>
@@ -1184,7 +1263,7 @@ const Hero = () => {
                 y: -5,
                 color: "#ffffff"
               }}
-              className="text-3xl text-gray-400 dark:text-gray-400 light:text-gray-600 hover:text-cyan-400 transition-colors"
+              className={`text-3xl transition-colors ${getTextColor('secondary')} hover:text-cyan-400`}
             >
               <FaGithub />
             </motion.a>
@@ -1208,7 +1287,7 @@ const Hero = () => {
       )}
 
       {/* Footer */}
-      <footer className="bg-gray-900 dark:bg-gray-900 light:bg-slate-200 text-gray-400 dark:text-gray-400 light:text-gray-600 py-8 text-center">
+      <footer className={`py-8 text-center ${isDarkTheme ? 'bg-gray-900 text-gray-400' : 'bg-slate-200 text-gray-600'}`}>
         <div className="container mx-auto px-6">
           <p className="text-sm">
             © {new Date().getFullYear()} Milonee Patel. All rights reserved.
